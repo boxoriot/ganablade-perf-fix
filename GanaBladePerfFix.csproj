@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>GanaBladePerfFix</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <!-- BCL comes from the game's Mono assemblies, not the SDK: Harmony's
+         CodeInstruction exposes System.Reflection.Emit types from the game's
+         mscorlib, so the SDK's netstandard facade can't satisfy them. -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- Point GameDir at the GanaBlade install (the folder containing GanaBlade.exe).
+       Steam's "Browse local files" opens the PARENT, which holds a nested
+       GanaBlade/ folder - this descends into it automatically if needed.
+       GameDir also falls back to the GAME environment variable if set. -->
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == ''">$(GAME)</GameDir>
+    <_Root>$(GameDir)</_Root>
+    <_Root Condition="!Exists('$(GameDir)/GanaBlade_Data') and Exists('$(GameDir)/GanaBlade/GanaBlade_Data')">$(GameDir)/GanaBlade</_Root>
+    <GameManaged Condition="'$(GameManaged)' == ''">$(_Root)/GanaBlade_Data/Managed</GameManaged>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(_Root)/BepInEx/core</BepInExCore>
+  </PropertyGroup>
+
+  <!-- Runs before compile, so a wrong path stops with a clear message instead of
+       a wall of "type 'System' not found" errors. -->
+  <Target Name="ValidateGamePaths" BeforeTargets="BeforeCompile">
+    <Error Condition="!Exists('$(GameManaged)/Assembly-CSharp.dll')"
+           Text="Couldn't find Assembly-CSharp.dll under '$(GameManaged)'. Pass -p:GameDir=/path/to/GanaBlade (the folder containing GanaBlade.exe). Steam's 'Browse local files' opens its parent." />
+    <Error Condition="!Exists('$(BepInExCore)/BepInEx.dll')"
+           Text="Couldn't find BepInEx.dll under '$(BepInExCore)'. Install BepInEx 5.4.x x64 into the game folder first (see README)." />
+  </Target>
+
+  <ItemGroup>
+    <Reference Include="mscorlib">
+      <HintPath>$(GameManaged)/mscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="netstandard">
+      <HintPath>$(GameManaged)/netstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCore)/BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCore)/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameManaged)/UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManaged)/UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(GameManaged)/UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameManaged)/Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
